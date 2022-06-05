@@ -14,7 +14,7 @@
             t (bit-xor t (+ t (js/Math.imul (bit-xor t (unsigned-bit-shift-right t 7)) (bit-or t 61))))]
         (/ (unsigned-bit-shift-right (bit-xor t (unsigned-bit-shift-right t 14)) 0) 4294967296)))))
 
-(def ^:dynamic *rand* (make-random 42))
+(def ^:dynamic *rand* (make-random (js/Date.now)))
 
 (defn random-int [n]
   (int (* n (*rand*))))
