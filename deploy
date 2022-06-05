@@ -6,7 +6,8 @@ rm -rf target
 rm -rf resources/public/js/compiled
 git branch -D gh-pages
 git checkout -b gh-pages
-lein cljsbuild once
+lein cljsbuild once dev
+lein cljsbuild once devcards
 rm -rf dev
 rm -rf src
 rm -rf target
