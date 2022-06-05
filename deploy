@@ -18,7 +18,7 @@ rm -rf project.clj
 rm -rf README.md
 rm -rf shell.nix
 
-mv resources/public/ .
+mv resources/public/* .
 git add .
 git commit -m "deploy"
 git push -f origin gh-pages
