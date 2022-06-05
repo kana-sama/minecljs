@@ -1,5 +1,7 @@
 #!/bin/bash
 
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
 rm -rf target
 rm -rf resources/public/js/compiled
 git branch -D gh-pages
@@ -17,3 +19,8 @@ rm -rf README.md
 rm -rf shell.nix
 
 mv resources/public/ .
+git add .
+git commit -m "deploy"
+git push origin gh-pages
+
+git checkout $BRANCH
