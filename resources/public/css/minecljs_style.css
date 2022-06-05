@@ -1,0 +1,11 @@
+/* minecljs CSS */
+
+pre {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui;
+}
