@@ -21,6 +21,6 @@ rm -rf shell.nix
 mv resources/public/ .
 git add .
 git commit -m "deploy"
-# git push origin gh-pages
+git push origin gh-pages
 
 git checkout $BRANCH
