@@ -4,7 +4,10 @@
     [reagent.core :as r :refer-macros [with-let]]
     [reagent.dom :refer [render]]
     [minecljs.ui :refer [field control-panel]]
-    [minecljs.game :as game]))
+    [minecljs.game :as game]
+    [minecljs.defcard])
+  (:require-macros
+    [minecljs.defcard :refer [defcard]]))
 
 
 (defn new-game [mode]
@@ -14,10 +17,11 @@
     :hard (game/new-game 30 16 99)
     :else (throw [:unknown-mode mode])))
 
-
 (defn app []
   (with-let [mode (r/atom :easy)
-             game (r/atom (new-game @mode))]
+             game (r/atom (new-game @mode))
+             duration (r/atom 0)
+             timer (atom nil)]
     [:div {:style {:width "100vw"
                    :height "100vh"
                    :background (match (:status @game)
@@ -34,24 +38,45 @@
         [:div {:style {:padding-bottom 16
                        :width 400}}
           [control-panel {:mode @mode
-                          :on-mode-change #(do (reset! mode %)
-                                               (reset! game (new-game %)))
-                          :on-reset (let [mode* @mode]
-                                      #(do (reset! game (new-game mode*))
-                                           (print 1)))}]]
+                          :mines-rest (- (:mines-amount @game) (count (:flags @game)))
+                          :duration @duration
+                          :on-mode-change
+                          (let [timer* @timer]
+                            (fn [new-mode]
+                              (reset! mode new-mode)
+                              (reset! game (new-game new-mode))
+                              (reset! duration 0)
+                              (js/clearInterval timer*)))
+                          :on-reset
+                          (let [mode* @mode, timer* @timer]
+                            (fn []
+                              (reset! game (new-game mode*))
+                              (reset! duration 0)
+                              (js/clearInterval timer*)))}]]
         (let [game* @game]
           (match (:status @game)
             :not-initialized
             [field {:width (:width @game)
                     :height (:height @game)
                     :get-type (fn [x y] :closed)
-                    :on-open (fn [x y] (swap! game game/initialize [x y]))}]
+                    :on-open (fn [x y]
+                               (swap! game game/initialize [x y])
+                               (reset! timer
+                                  (js/setInterval
+                                    (fn []
+                                      (print "here")
+                                      (swap! duration inc))
+                                      ;; (if (= :active (:status @game)))
+                                    1000)))}]
 
             :active
             [field {:width (:width game*)
                     :height (:height game*)
                     :get-type (fn [x y]
                                 (cond
+                                  ((:marks game*) [x y])
+                                  :mark
+
                                   ((:flags game*) [x y])
                                   :flag
 
@@ -60,7 +85,8 @@
 
                                   :else :closed))
                     :on-open (fn [x y] (swap! game game/open-cell [x y]))
-                    :on-flag (fn [x y] (swap! game game/flag-cell [x y]))}]
+                    :on-flag (fn [x y] (swap! game game/flag-cell [x y]))
+                    :on-mark (fn [x y] (swap! game game/mark-cell [x y]))}]
 
             :failed
             [field {:width (:width game*)
@@ -78,9 +104,12 @@
                     :get-type (fn [x y]
                                 (if ((:mines game*) [x y])
                                   :defused
-                                  [:empty (game/mines-around game* [x y])]))}]))]]))
+                                  [:empty (game/mines-around game* [x y])]))}]))]]
+    (finally
+      (js/clearInterval @timer))))
 
+(defcard app
+  [app])
 
 (let [node (js/document.getElementById "main-app-area")]
   (render [app] node))
-  

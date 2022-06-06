@@ -13,10 +13,11 @@
 (defrecord Game
   [status
    width height mines-amount
-   mines open flags])
+   mines open flags marks])
    
 (defcard game
   "Game state is a map with sets for open cells, cells with mines, cells with flags.
+   Marks are temporary, and will leave after every move.
 
    Cell is just a vector of two numbers with position.
 
@@ -36,7 +37,7 @@
 (defn new-game [width height mines-amount]
   (map->Game {:status :not-initialized
               :width width, :height height, :mines-amount mines-amount
-              :mines #{}, :open #{}, :flags #{}}))
+              :mines #{}, :open #{}, :flags #{}, :marks #{}}))
 
 (declare mines-around)
 (defn preview-cell-type [game [x y]]
@@ -45,7 +46,8 @@
     :closed
 
     :active
-    (cond ((:flags game) [x y]) :flag
+    (cond ((:marks game) [x y]) :mark
+          ((:flags game) [x y]) :flag
           ((:mines game) [x y]) :mine-preview
           ((:open game) [x y]) [:empty (mines-around game [x y])]
           :else [:empty-preview (mines-around game [x y])])
@@ -106,7 +108,7 @@
   (test= (new-game 5 5 5)
          (map->Game {:status :not-initialized
                      :width 5, :height 5, :mines-amount 5
-                     :mines #{}, :open #{}, :flags #{}}))
+                     :mines #{}, :open #{}, :flags #{}, :marks #{}}))
   "We can render such game, but as it isn't initialized,
    nothing interesting here."
   (let [game (new-game 5 5 5)]
@@ -218,10 +220,22 @@
     (throw [:impossible-to-flag-open-cell game [x y]])
 
     ((:flags game) [x y])
-    (update game :flags disj [x y])
+    (-> game
+      (update :flags disj [x y])
+      (assoc :marks #{}))
 
     :else
-    (update game :flags conj [x y])))
+    (-> game
+      (update :flags conj [x y])
+      (assoc :marks #{}))))
+
+(defn mark-cell [game [x y]]
+  {:pre [(= :active (:status game))
+         (not ((:open game) [x y]))
+         (not ((:flags game) [x y]))]}
+  (if ((:marks game) [x y])
+    (update game :marks disj [x y])
+    (update game :marks conj [x y])))
 
 (defcard flag-cell
   "Game state transition, when player flag closed cell."
@@ -231,7 +245,7 @@
   (let [game (map->Game {:status :active
                          :width 3, :height 3, :mines-amount 2
                          :mines #{[0 0] [2 2]}
-                         :open #{} :flags #{}})]
+                         :open #{} :flags #{}, :marks #{}})]
     [:div
       [markdown "When we flag [1 1]:"]
       [games-sequence game
@@ -282,7 +296,7 @@
 
   (let [game (map->Game {:status :active
                          :width 5, :height 5, :mines-amount 2
-                         :open #{}, :flags #{}
+                         :open #{}, :flags #{}, :marks #{}
                          :mines #{[1 1] [3 0]}})]
     [:div
       [markdown "Clicking on [3 3]"]
@@ -305,7 +319,8 @@
     (throw [:game-should-be-active game])
     (let [to-open (cells-to-open game [x y])
           game (update game :open union to-open)
-          game (update game :flags difference to-open)]
+          game (update game :flags difference to-open)
+          game (assoc game :marks #{})]
       (cond
         (not-empty (intersection (:mines game) (:open game)))
         (assoc game :status :failed)
@@ -323,7 +338,7 @@
   (let [game (map->Game {:status :active
                          :width 3, :height 3, :mines-amount 2
                          :mines #{[0 0] [2 2]}
-                         :open #{} :flags #{}})]
+                         :open #{} :flags #{}, :marks #{}})]
     [:div
       [markdown "Let `game` be:"]
       [game-preview game]

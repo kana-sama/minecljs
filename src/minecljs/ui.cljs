@@ -59,9 +59,16 @@
    (cell-base {} ""))
   ([x]
    (if (map? x) (cell-base x "") (cell-base {} x)))
-  ([{:keys [open? on-open on-flag]} children]
+  ([{:keys [open? on-open on-flag on-mark]} children]
    [:div {:on-click (fn [e]
-                      (if (not (.-ctrlKey e))
+                      (cond
+                        (.-altKey e)
+                        (and on-mark (on-mark))
+
+                        (.-ctrlKey e)
+                        :none
+
+                        :else
                         (and on-open (on-open))))
           :on-context-menu (fn [e]
                              (.preventDefault e)
@@ -88,7 +95,7 @@
     [cell-base {:open? true} "💣"]])
 
 
-(defn cell [{:keys [type on-open on-flag]}]
+(defn cell [{:keys [type on-open on-flag on-mark]}]
   (match type
     [:empty 0]
     [cell-base {:open? true}]
@@ -118,10 +125,13 @@
       [:span {:style {:opacity 0.5}} "💣"]]
 
     :closed
-    [cell-base {:on-open on-open, :on-flag on-flag}]
+    [cell-base {:on-open on-open, :on-flag on-flag, :on-mark on-mark}]
 
     :flag
     [cell-base {:on-flag on-flag} "🚩"]
+
+    :mark
+    [cell-base {:on-open on-open, :on-flag on-flag, :on-mark on-mark} "❓"]
 
     :wrong-flag
     [cell-base {:open? true} "❌"]
@@ -160,9 +170,15 @@
     [card-row
       [cell {:type :closed
              :on-open #(print :on-open)
-             :on-flag #(print :on-flag)}]
+             :on-flag #(print :on-flag)
+             :on-mark #(print :on-mark)}]
       [cell {:type :flag
-             :on-flag #(print :on-flag)}]])
+             :on-flag #(print :on-flag)}]
+      [cell {:type :mark
+             :on-open #(print :on-open)
+             :on-flag #(print :on-flag)
+             :on-mark #(print :on-mark)}]])
+        
   "Preview cells (for debug)"
   (markup
     [card-row
@@ -171,7 +187,7 @@
       [cell {:type [:empty-preview 5]}]]))
 
 
-(defn field [{:keys [width height get-type on-open on-flag]}]
+(defn field [{:keys [width height get-type on-open on-flag on-mark]}]
   [:div {:style {:display :flex, :flex-direction :column}}
     (for [y (range height)]
       ^{:key y}
@@ -180,7 +196,8 @@
           ^{:key x}
           [cell {:type (get-type x y)
                  :on-open #(and on-open (on-open x y))
-                 :on-flag #(and on-flag (on-flag x y))}])])])
+                 :on-flag #(and on-flag (on-flag x y))
+                 :on-mark #(and on-mark (on-mark x y))}])])])
 
 (defcard field
   (markup
@@ -190,7 +207,7 @@
             :on-flag (fn [x y] (print [:flag x y]))}])
 
   (markup
-    (let [map [[:defused :exploded     :wrong-flag]
+    (let [map [[:defused :exploded     :mark]
                [:flag    [:empty 0]    [:empty 5]]
                [:closed  :mine-preview [:empty-preview 3]]]]
       (field {:width 3, :height 3
@@ -251,17 +268,30 @@
 (defcard reset-button
   [reset-button #()])
 
+(defn game-stats [{:keys [mines-rest duration]}]
+  [:div {:style {:padding-top 16
+                 :font-size "2em"
+                 :display :flex
+                 :justify-content :space-between}}
+    [:div "🚩 " mines-rest]
+    [:div duration " 🕐"]])
 
-(defn control-panel [{:keys [mode on-mode-change on-reset]}]
+(defn control-panel [{:keys [mode mines-rest duration on-mode-change on-reset]}]
   (let [modes [[:easy "Easy"]
                [:medium "Medium"]
                [:hard "Hard"]]]
-    [:div {:style {:display :flex}}
-      [:div {:style {:width "100%", :padding-right 8}}
-        [switcher {:options modes, :value mode, :on-change on-mode-change}]]
-      [reset-button on-reset]]))
+    [:div {:style {:display :flex, :flex-direction :column}}
+      [:div {:style {:display :flex}}
+        [:div {:style {:width "100%", :padding-right 8}}
+          [switcher {:options modes, :value mode, :on-change on-mode-change}]]
+        [reset-button on-reset]]
+      [game-stats {:mines-rest mines-rest, :duration duration}]]))
 
 (defcard control-panel
   [control-panel {:mode :easy
+                  :mines-rest 10
+                  :duration 10
                   :on-mode-change #()
                   :on-reset #()}])
+
+  
