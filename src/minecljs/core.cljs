@@ -64,9 +64,8 @@
                                (reset! timer
                                   (js/setInterval
                                     (fn []
-                                      (print "here")
-                                      (swap! duration inc))
-                                      ;; (if (= :active (:status @game)))
+                                      (if (= :active (:status @game))
+                                        (swap! duration inc)))
                                     1000)))}]
 
             :active
