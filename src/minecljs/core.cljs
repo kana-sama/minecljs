@@ -7,7 +7,7 @@
     [minecljs.game :as game]
     [minecljs.defcard])
   (:require-macros
-    [minecljs.defcard :refer [defcard]]))
+    [minecljs.defcard :refer [defcard test=]]))
 
 
 (defn new-game [mode]
@@ -16,6 +16,7 @@
     :medium (game/new-game 16 16 40)
     :hard (game/new-game 30 16 99)
     :else (throw [:unknown-mode mode])))
+
 
 (defn app []
   (with-let [mode (r/atom :easy)

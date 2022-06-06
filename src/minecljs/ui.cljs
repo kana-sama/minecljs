@@ -268,13 +268,25 @@
 (defcard reset-button
   [reset-button #()])
 
+
+(defn seconds->mm:ss [duration]
+  (let [s (mod duration 60)
+        m (/ (- duration s) 60)]
+    (goog.string.format "%02d:%02d" m s)))
+    
+(defcard seconds->mm:ss
+  (test= (seconds->mm:ss    45)   "00:45")
+  (test= (seconds->mm:ss   145)   "02:25")
+  (test= (seconds->mm:ss 99999) "1666:39"))
+
+
 (defn game-stats [{:keys [mines-rest duration]}]
   [:div {:style {:padding-top 16
                  :font-size "2em"
                  :display :flex
                  :justify-content :space-between}}
     [:div "🚩 " mines-rest]
-    [:div duration " 🕐"]])
+    [:div (seconds->mm:ss duration) " 🕐"]])
 
 (defn control-panel [{:keys [mode mines-rest duration on-mode-change on-reset]}]
   (let [modes [[:easy "Easy"]
