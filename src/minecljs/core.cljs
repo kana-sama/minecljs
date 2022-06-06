@@ -95,7 +95,9 @@
                                   (if ((:flags game*) [x y])
                                     :defused
                                     :exploded)
-                                  [:empty (game/mines-around game* [x y])]))}]
+                                  (if ((:open game*) [x y])
+                                    [:empty (game/mines-around game* [x y])]
+                                    :closed)))}]
 
             :win
             [field {:width (:width game*)
