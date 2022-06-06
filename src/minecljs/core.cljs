@@ -91,13 +91,19 @@
             [field {:width (:width game*)
                     :height (:height game*)
                     :get-type (fn [x y]
-                                (if ((:mines game*) [x y])
+                                (cond
+                                  ((:mines game*) [x y])
                                   (if ((:flags game*) [x y])
                                     :defused
                                     :exploded)
-                                  (if ((:open game*) [x y])
-                                    [:empty (game/mines-around game* [x y])]
-                                    :closed)))}]
+
+                                  ((:open game*) [x y])
+                                  [:empty (game/mines-around game* [x y])]
+
+                                  ((:flags game*) [x y])
+                                  :wrong-flag
+                                  
+                                  :else :closed))}]
 
             :win
             [field {:width (:width game*)
