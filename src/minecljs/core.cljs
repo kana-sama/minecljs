@@ -86,7 +86,8 @@
                                   :else :closed))
                     :on-open (fn [x y] (swap! game game/open-cell [x y]))
                     :on-flag (fn [x y] (swap! game game/flag-cell [x y]))
-                    :on-mark (fn [x y] (swap! game game/mark-cell [x y]))}]
+                    :on-mark (fn [x y] (swap! game game/mark-cell [x y]))
+                    :on-open-around (fn [x y] (swap! game game/open-or-flag-around [x y]))}]
 
             :failed
             [field {:width (:width game*)

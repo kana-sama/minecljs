@@ -330,6 +330,43 @@
 
         :else game))))
 
+(defn flags-around [game [x y]]
+  (intersection
+    (cells-around game [x y])
+    (:flags game)))
+
+(defn closed-around-without-flags [game [x y]]
+  (difference
+    (cells-around game [x y])
+    (union (:open game) (:flags game))))
+
+(defn closed-around-with-flags [game [x y]]
+  (difference
+    (cells-around game [x y])
+    (:open game)))
+
+(defn open-or-flag-around [game [x y]]
+  {:pre (= :active (:status game))}
+  (cond
+    (= (count (flags-around game [x y]))
+       (mines-around game [x y]))
+    (reduce
+      (fn [game [x y]]
+        (cond
+          (not (= :active (:status game))) (reduced game)
+          ((:open game) [x y]) game
+          :else (open-cell game [x y])))
+      game (closed-around-without-flags game [x y]))
+    
+    (= (count (closed-around-with-flags game [x y]))
+       (mines-around game [x y]))
+    (reduce flag-cell game
+      (closed-around-without-flags game [x y]))
+
+    :else
+    game))
+
+
 (defcard open-cell
   "Game state transition, when player open some cell.
 

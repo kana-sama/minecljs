@@ -59,7 +59,7 @@
    (cell-base {} ""))
   ([x]
    (if (map? x) (cell-base x "") (cell-base {} x)))
-  ([{:keys [open? on-open on-flag on-mark]} children]
+  ([{:keys [open? on-open on-open-around on-flag on-mark]} children]
    [:div {:on-click (fn [e]
                       (cond
                         (.-altKey e)
@@ -73,7 +73,8 @@
           :on-context-menu (fn [e]
                              (.preventDefault e)
                              (.stopPropagation e)
-                             (and on-flag (on-flag)))
+                             (if on-open-around (on-open-around))
+                             (if on-flag (on-flag)))
           :style {:width "32px", :height "32px"
                   :border (str "1px solid " (rgb 255 255 255 0.15))
                   :line-height "32px"
@@ -95,13 +96,15 @@
     [cell-base {:open? true} "💣"]])
 
 
-(defn cell [{:keys [type on-open on-flag on-mark]}]
+(defn cell [{:keys [type
+                    on-open on-open-around
+                    on-flag on-mark]}]
   (match type
     [:empty 0]
     [cell-base {:open? true}]
 
     [:empty n]
-    [cell-base {:open? true}
+    [cell-base {:open? true, :on-open-around on-open-around}
       [:span {:style {:color (cell-mines-around-color n)}}
         n]]
 
@@ -187,17 +190,23 @@
       [cell {:type [:empty-preview 5]}]]))
 
 
-(defn field [{:keys [width height get-type on-open on-flag on-mark]}]
-  [:div {:style {:display :flex, :flex-direction :column}}
+(defn field [{:keys [width height get-type
+                     on-open on-open-around
+                     on-flag on-mark]}]
+  [:div {:style {:display :flex
+                 :flex-direction :column
+                 :user-select :none
+                 :-webkit-user-select :none}}
     (for [y (range height)]
       ^{:key y}
       [:div {:style {:display :flex, :flex-direction :row}}
         (for [x (range width)]
           ^{:key x}
           [cell {:type (get-type x y)
-                 :on-open #(and on-open (on-open x y))
-                 :on-flag #(and on-flag (on-flag x y))
-                 :on-mark #(and on-mark (on-mark x y))}])])])
+                 :on-open #(if on-open (on-open x y))
+                 :on-flag #(if on-flag (on-flag x y))
+                 :on-mark #(if on-mark (on-mark x y))
+                 :on-open-around #(if on-open-around (on-open-around x y))}])])])
 
 (defcard field
   (markup
@@ -288,7 +297,9 @@
     [:div "🚩 " mines-rest]
     [:div (seconds->mm:ss duration) " 🕐"]])
 
-(defn control-panel [{:keys [mode mines-rest duration on-mode-change on-reset]}]
+(defn control-panel [{:keys [mode
+                             mines-rest duration
+                             on-mode-change on-highlight?-change on-reset]}]
   (let [modes [[:easy "Easy"]
                [:medium "Medium"]
                [:hard "Hard"]]]
@@ -297,7 +308,9 @@
         [:div {:style {:width "100%", :padding-right 8}}
           [switcher {:options modes, :value mode, :on-change on-mode-change}]]
         [reset-button on-reset]]
-      [game-stats {:mines-rest mines-rest, :duration duration}]]))
+      [game-stats
+        {:mines-rest mines-rest
+         :duration duration}]]))
 
 (defcard control-panel
   [control-panel {:mode :easy
